@@ -5,6 +5,7 @@ import Card from "./Card";
 const Deck = () => {
   const [deck, setDeck] = useState(null);
   const [cards, setCards] = useState([]);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     async function loadDeck() {
@@ -17,22 +18,34 @@ const Deck = () => {
   }, [setDeck]);
 
   async function loadCard() {
-    const res = await axios.get(
-      `http://deckofcardsapi.com/api/deck/${deck.deck_id}/draw/?count=1`
-    );
-    const card = res.data.cards[0];
-    setCards((c) => [
-      ...c,
-      { id: card.code, name: card.suit + " " + card.value, image: card.image },
-    ]);
+    try {
+      const res = await axios.get(
+        `http://deckofcardsapi.com/api/deck/${deck.deck_id}/draw/?count=1`
+      );
+      if (res.data.remaining === 0) {
+        return setErrorMessage("No cards remaining!");
+      }
+      const card = res.data.cards[0];
+      setCards((c) => [
+        ...c,
+        {
+          id: card.code,
+          name: card.value + " " + card.suit,
+          image: card.image,
+        },
+      ]);
+    } catch (e) {
+      console.log(e);
+    }
   }
 
   const drawnCards = cards.map((c) => (
-    <Card key={c.code} name={c.name} image={c.image} />
+    <Card key={c.id} name={c.name} image={c.image} />
   ));
 
   return (
     <div>
+      {errorMessage && <h1>{errorMessage}</h1>}
       <button onClick={loadCard}>Draw Card</button>
       {drawnCards}
     </div>
